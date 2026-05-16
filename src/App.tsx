@@ -3445,7 +3445,7 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
     return () => clearInterval(t);
   }, [lowerAddr]);
 
-  // Listen for score from iframe and submit /simple/end
+  // Listen for score from iframe and submit /simple/end. React overlay owns the game-over UI.
   useEffect(() => {
     if (!lowerAddr) return;
     const onMsg = async (e: MessageEvent) => {
@@ -3453,13 +3453,24 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       if (!d) return;
       if (d.type === 'litdex:mathslash:exit') {
         setPlaying(false);
+        setResult(null);
+        setGameOverPending(false);
+        setGameOverScore(null);
         try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
         try { (screen.orientation as any)?.unlock?.(); } catch {}
         fetchStats();
         return;
       }
-      if (d.type !== 'litdex:mathslash:end') return;
+      // Accept BOTH the new GAME_OVER event and the legacy litdex:mathslash:end event
+      const isGameOver = d.type === 'GAME_OVER' || d.type === 'litdex:mathslash:end';
+      if (!isGameOver) return;
+
       const score = Number(d.score) || 0;
+      setGameOverScore(score);
+      setGameOverPending(true);
+      setResult(null);
+      setErrMsg('');
+
       try {
         const r = await fetch(`${SIMPLE_API}/simple/end`, {
           method: 'POST',
@@ -3467,9 +3478,6 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
           body: JSON.stringify({ wallet: lowerAddr, score }),
         });
         const data = await r.json().catch(() => ({}));
-        setPlaying(false);
-        try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
-        try { (screen.orientation as any)?.unlock?.(); } catch {}
         if (r.ok && data?.success !== false) {
           const zkltcSent = String(data?.zkltcSent ?? (score * RATE).toFixed(8));
           const explorerUrl = data?.explorerUrl || (data?.txHash ? `https://liteforge.explorer.caldera.xyz/tx/${data.txHash}` : undefined);
@@ -3485,17 +3493,38 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
         } else {
           setErrMsg(data?.error || data?.message || 'Failed to submit score');
         }
+      } catch (err: any) {
+        setErrMsg(err?.message || 'Network error submitting score');
+      } finally {
+        setGameOverPending(false);
         fetchStats();
         fetchBoard();
         fetchGlobal();
-      } catch (err: any) {
-        setPlaying(false);
-        setErrMsg(err?.message || 'Network error submitting score');
       }
     };
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }, [lowerAddr]);
+
+  const handlePlayAgain = async () => {
+    setResult(null);
+    setGameOverPending(false);
+    setGameOverScore(null);
+    setErrMsg('');
+    setIframeKey(k => k + 1); // reload iframe — game's own PLAY button calls /simple/start
+  };
+
+  const handleExitGame = () => {
+    setPlaying(false);
+    setResult(null);
+    setGameOverPending(false);
+    setGameOverScore(null);
+    try { if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {}); } catch {}
+    try { (screen.orientation as any)?.unlock?.(); } catch {}
+    fetchStats();
+    fetchBoard();
+    fetchGlobal();
+  };
 
   useEffect(() => {
     if (playing) document.body.classList.add('hide-nav');
