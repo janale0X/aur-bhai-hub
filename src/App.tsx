@@ -221,7 +221,7 @@ const SwapPage = () => {
               exit={{ x: "100%", opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              <BridgeCard className="brand-glow-hover transition-all duration-500" />
+              <BridgeCard className="brand-glow-hover transition-all duration-500" onNavigate={(p) => window.dispatchEvent(new CustomEvent('app:navigate', { detail: p }))} />
             </motion.div>
           ) : (
             <motion.div
