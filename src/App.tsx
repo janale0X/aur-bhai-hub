@@ -4181,6 +4181,11 @@ const MessengerPage = () => {
             <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Global On-Chain</span>
             <span className="text-lg font-black text-white">{stats.total}</span>
           </div>
+          <div className="w-px h-8 bg-white/5" />
+          <div className="flex flex-col">
+            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Points</span>
+            <span className="text-lg font-black text-white">{backendPoints}</span>
+          </div>
         </div>
       </div>
 
