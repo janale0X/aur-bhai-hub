@@ -4056,6 +4056,29 @@ const MessengerPage = () => {
   const [lastSentHash, setLastSentHash] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendPoints, setBackendPoints] = useState<number>(0);
+  const [msgCount, setMsgCount] = useState<number>(0);
+  const DAILY_MSG_LIMIT = 10;
+
+  const getISTDate = () => new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const msgStorageKey = address ? `litdex_msg_count_${address}` : null;
+
+  const readLocalMsgCount = (): number => {
+    if (!msgStorageKey) return 0;
+    try {
+      const raw = localStorage.getItem(msgStorageKey);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      if (parsed?.date !== getISTDate()) return 0;
+      return Number(parsed?.count ?? 0);
+    } catch { return 0; }
+  };
+
+  const writeLocalMsgCount = (count: number) => {
+    if (!msgStorageKey) return;
+    try {
+      localStorage.setItem(msgStorageKey, JSON.stringify({ date: getISTDate(), count }));
+    } catch { /* ignore */ }
+  };
 
   const fetchBackendPoints = async () => {
     if (!address) return;
