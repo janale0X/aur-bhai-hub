@@ -4096,6 +4096,7 @@ const MessengerPage = () => {
   useEffect(() => {
     if (isConnected && address) {
       fetchStats();
+      fetchBackendPoints();
       if (activeTab === 'inbox') fetchMessages();
     }
   }, [isConnected, address, activeTab, inboxTab]);
