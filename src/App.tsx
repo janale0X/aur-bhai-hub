@@ -3802,6 +3802,17 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       setErrMsg('No games left today');
       return;
     }
+    const ts: any = (window as any).turnstile;
+    let token = turnstileToken;
+    try {
+      if (!token && ts && turnstileWidgetIdRef.current != null) {
+        token = ts.getResponse(turnstileWidgetIdRef.current) || '';
+      }
+    } catch {}
+    if (!token) {
+      setErrMsg('Please complete verification');
+      return;
+    }
     setErrMsg('');
     setGameOver(null);
     setSentNotice('');
@@ -3813,12 +3824,13 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       const r = await fetch(`${SIMPLE_API}/simple/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet: lowerAddr }),
+        body: JSON.stringify({ wallet: lowerAddr, turnstileToken: token }),
       });
       const data = await r.json().catch(() => ({}));
       console.log('[MathSlash] /simple/start response:', data);
       if (!r.ok) {
         setErrMsg(data?.error || data?.message || `Failed to start (${r.status})`);
+        resetTurnstile();
         return;
       }
       setPlaying(true);
@@ -3830,6 +3842,7 @@ const MathSlashPage = ({ onBack }: { onBack: () => void }) => {
       try { (screen.orientation as any)?.lock?.('landscape').catch(() => {}); } catch {}
     } catch (e: any) {
       setErrMsg(e?.message || 'Network error');
+      resetTurnstile();
     } finally {
       setStarting(false);
     }
