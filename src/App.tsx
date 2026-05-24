@@ -5200,6 +5200,7 @@ export default function App() {
       case 'quests': return <QuestsPage />;
       case 'games': return <GamesPage />;
       case 'faucet': return <FaucetPage />;
+      case 'hub': return <HubPage />;
       default: return <SwapPage />;
     }
   };
